@@ -1,0 +1,48 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  dockerRegistryConnection: 'docker-hub-connection'
+  imageRepository: 'maksymmaliutin/ci-cd'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  tag: 'latest'
+
+stages:
+- stage: Test
+  displayName: 'Запуск Unit-тестів'
+  jobs:
+  - job: RunTests
+    displayName: 'Тестування API'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.11'
+      displayName: 'Встановлення Python'
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      displayName: 'Встановлення залежностей'
+    
+    - script: |
+        pytest
+      displayName: 'Запуск pytest'
+
+- stage: BuildAndPush
+  displayName: 'Збирання та публікація Docker-образу'
+  dependsOn: Test 
+  jobs:
+  - job: BuildDocker
+    displayName: 'Build and Push'
+    steps:
+    - task: Docker@2
+      displayName: 'Збирання та відправка образу в Docker Hub'
+      inputs:
+        containerRegistry: '$(dockerRegistryConnection)'
+        repository: '$(imageRepository)'
+        command: 'buildAndPush'
+        Dockerfile: '$(dockerfilePath)'
+        tags: '$(tag)'
