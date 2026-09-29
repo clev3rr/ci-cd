@@ -13,7 +13,7 @@ pool:
 
 variables:
   pythonVersion: '3.12'
-  dockerHubServiceConnection: 'dockerHubConnection'
+  dockerHubServiceConnection: 'DockerHub'
   imageRepository: 'maksimmaliutin/ci-cd'
   imageTag: 'latest'
 
