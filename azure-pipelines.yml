@@ -24,12 +24,8 @@ stages:
       - job: PythonTests
         displayName: Install dependencies and run unit tests
         steps:
-          - task: UsePythonVersion@0
-            displayName: Use Python $(pythonVersion)
-            inputs:
-              versionSpec: '$(pythonVersion)'
-
           - script: |
+              python --version
               python -m pip install --upgrade pip
               pip install -r requirements.txt
             displayName: Install Python dependencies
