@@ -1,0 +1,49 @@
+name: Docker Pack and Push
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        required: true
+        type: string
+      image_tag:
+        required: false
+        type: string
+        default: 'latest'
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+
+jobs:
+  docker-pack-n-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: docker build -t ${{ inputs.image_name }}:${{ inputs.image_tag }} .
+
+      - name: Push to Docker Hub (Main only)
+        if: github.ref == 'refs/heads/main'
+        run: docker push ${{ inputs.image_name }}:${{ inputs.image_tag }}
+
+      - name: Save Docker image as tar (Non-main branches)
+        if: github.ref != 'refs/heads/main'
+        run: docker save ${{ inputs.image_name }}:${{ inputs.image_tag }} > image.tar
+          
+      - name: Upload artifact (Non-main branches)
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
