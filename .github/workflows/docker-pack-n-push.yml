@@ -13,6 +13,9 @@ on:
       build_context:
         type: string
         default: '.'
+      dockerfile:
+        type: string
+        default: Dockerfile
       artifact_name:
         type: string
         default: docker-image
@@ -37,7 +40,11 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t "${{ inputs.image_name }}:${{ inputs.image_tag }}" "${{ inputs.build_context }}"
+        env:
+          IMAGE: ${{ inputs.image_name }}:${{ inputs.image_tag }}
+          BUILD_CONTEXT: ${{ inputs.build_context }}
+          DOCKERFILE: ${{ inputs.dockerfile }}
+        run: docker build -f "$BUILD_CONTEXT/$DOCKERFILE" -t "$IMAGE" "$BUILD_CONTEXT"
 
       - name: Push to Docker Hub (Main only)
         if: github.ref == 'refs/heads/main'

@@ -69,3 +69,15 @@ jobs:
     secrets:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+  build-migrations:
+    needs: build-n-test
+    uses: ./.github/workflows/docker-pack-n-push.yml
+    with:
+      image_name: maksimmaliutin/ci-cd-migrations
+      image_tag: latest
+      dockerfile: Dockerfile.migrations
+      artifact_name: docker-image-migrations
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
