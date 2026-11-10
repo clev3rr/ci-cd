@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Список об’єктів</title>
+</head>
+<body>
+  <h1>Список об’єктів</h1>
+
+  <form id="item-form">
+    <label>ID <input name="id" type="number" required></label>
+    <label>Назва <input name="name" required></label>
+    <label>Опис <input name="description"></label>
+    <button type="submit" id="save">Додати</button>
+    <button type="button" id="cancel" hidden>Скасувати</button>
+  </form>
+
+  <p id="message" role="status"></p>
+  <ul id="items"></ul>
+
+  <script>
+    const form = document.querySelector('#item-form');
+    const idField = form.elements.namedItem('id');
+    const nameField = form.elements.namedItem('name');
+    const descriptionField = form.elements.namedItem('description');
+    const saveButton = document.querySelector('#save');
+    const cancelButton = document.querySelector('#cancel');
+    const message = document.querySelector('#message');
+    const list = document.querySelector('#items');
+    const apiUrl = '/api/items';
+    let editingId = null;
+
+    async function request(url, options) {
+      const response = await fetch(url, options);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(
+          typeof error?.detail === 'string' ? error.detail : `HTTP ${response.status}`
+        );
+      }
+
+      return response.status === 204 ? null : response.json();
+    }
+
+    function resetForm() {
+      form.reset();
+      editingId = null;
+      idField.readOnly = false;
+      saveButton.textContent = 'Додати';
+      cancelButton.hidden = true;
+    }
+
+    function editItem(item) {
+      editingId = item.id;
+      idField.value = item.id;
+      idField.readOnly = true;
+      nameField.value = item.name;
+      descriptionField.value = item.description ?? '';
+      saveButton.textContent = 'Зберегти';
+      cancelButton.hidden = false;
+      nameField.focus();
+    }
+
+    async function deleteItem(item) {
+      if (!confirm(`Видалити «${item.name}»?`)) return;
+
+      try {
+        await request(`${apiUrl}/${item.id}`, { method: 'DELETE' });
+        if (editingId === item.id) resetForm();
+        await loadItems();
+      } catch (error) {
+        message.textContent = `Не вдалося видалити об’єкт: ${error.message}`;
+      }
+    }
+
+    async function loadItems() {
+      const items = await request(apiUrl);
+      list.replaceChildren();
+      message.textContent = items.length ? '' : 'Список поки порожній.';
+
+      for (const item of items) {
+        const row = document.createElement('li');
+        const description = item.description ? ` — ${item.description}` : '';
+        const editButton = document.createElement('button');
+        const deleteButton = document.createElement('button');
+
+        editButton.textContent = 'Редагувати';
+        editButton.addEventListener('click', () => editItem(item));
+
+        deleteButton.textContent = 'Видалити';
+        deleteButton.addEventListener('click', () => deleteItem(item));
+
+        row.append(`${item.id}. ${item.name}${description} `, editButton, ' ', deleteButton);
+        list.append(row);
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const item = {
+        id: idField.valueAsNumber,
+        name: nameField.value,
+        description: descriptionField.value || null
+      };
+
+      try {
+        await request(editingId === null ? apiUrl : `${apiUrl}/${editingId}`, {
+          method: editingId === null ? 'POST' : 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+
+        resetForm();
+        await loadItems();
+      } catch (error) {
+        message.textContent = `Не вдалося зберегти об’єкт: ${error.message}`;
+      }
+    });
+
+    cancelButton.addEventListener('click', resetForm);
+
+    loadItems().catch((error) => {
+      message.textContent = `Не вдалося завантажити об’єкти: ${error.message}`;
+    });
+  </script>
+</body>
+</html>
