@@ -1,0 +1,11 @@
+backend:
+  image: "lab4-api:kind"
+  pullPolicy: IfNotPresent
+
+frontend:
+  image: "lab4-frontend:local"
+  pullPolicy: IfNotPresent
+
+migration:
+  image: "lab4-migrations:local"
+  pullPolicy: IfNotPresent

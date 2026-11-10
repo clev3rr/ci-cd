@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name | trunc 45 }}-migrate-{{ .Release.Revision }}
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: {{ .Values.migration.timeoutSeconds }}
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.postgres.image | quote }}
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              until pg_isready -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE"; do
+                sleep 2
+              done
+          env:
+            - name: PGHOST
+              value: {{ printf "%s-postgres" .Release.Name | quote }}
+            - name: PGUSER
+              value: {{ .Values.postgres.user | quote }}
+            - name: PGDATABASE
+              value: {{ .Values.postgres.database | quote }}
+      containers:
+        - name: migrate
+          image: {{ .Values.migration.image | quote }}
+          imagePullPolicy: {{ .Values.migration.pullPolicy }}
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.existingSecret | quote }}
+                  key: database-url

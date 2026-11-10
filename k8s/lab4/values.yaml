@@ -1,0 +1,27 @@
+postgres:
+  image: "postgres:16"
+  database: lab4
+  user: lab4
+  existingSecret: lab4-db
+  storageClass: standard
+  storageSize: 1Gi
+
+migration:
+  image: "maksimmaliutin/ci-cd-migrations:latest"
+  pullPolicy: Always
+  timeoutSeconds: 300
+
+backend:
+  image: "maksimmaliutin/ci-cd:latest"
+  pullPolicy: Always
+  replicas: 1
+
+frontend:
+  image: "maksimmaliutin/ci-cd-frontend:latest"
+  pullPolicy: Always
+  replicas: 1
+
+ingress:
+  enabled: true
+  className: traefik
+  host: lab4.localhost
