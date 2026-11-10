@@ -13,6 +13,22 @@ on:
 jobs:
   build-n-test:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql+psycopg://lab4:lab4-ci-pass@127.0.0.1:5433/lab4_test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: lab4_test
+          POSTGRES_USER: lab4
+          POSTGRES_PASSWORD: lab4-ci-pass
+        ports:
+          - "5433:5432"
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U lab4 -d lab4_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,8 +43,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run unit tests
-        run: pytest -q
+      - name: Apply database migrations
+        run: python -m alembic upgrade head
+
+      - name: Run tests
+        run: python -m pytest -q
 
   call-docker-workflow:
     needs: build-n-test
