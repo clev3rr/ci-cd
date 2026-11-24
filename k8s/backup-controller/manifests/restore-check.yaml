@@ -1,0 +1,21 @@
+﻿apiVersion: v1
+kind: Pod
+metadata:
+  name: restore-check
+  namespace: demo
+spec:
+  restartPolicy: Never
+  containers:
+    - name: postgres-client
+      image: postgres:16
+      command: ["sleep", "300"]
+      envFrom:
+        - secretRef:
+            name: users-db-connection
+      volumeMounts:
+        - name: backups
+          mountPath: /backups
+  volumes:
+    - name: backups
+      persistentVolumeClaim:
+        claimName: postgres-backups
